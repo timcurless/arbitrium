@@ -35,10 +35,14 @@ func main() {
     logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
   }
 
+  // Create AWS SDK session
+  sess := session.Must(session.NewSession())
+
+  // Create the EC2 State Service
   svc := ec2StateSvc{}
 
   powerOnHandler := httptransport.NewServer(
-    makePowerOnEndpoint(svc),
+    makePowerOnEndpoint(sess, svc),
     decodePowerOnRequest,
     encodeResponse,
   )
@@ -51,20 +55,14 @@ func main() {
 type ec2StateSvc struct {}
 
 type Ec2StateSvc interface {
-  PowerOn(string) (string, error)
+  PowerOn(*session.Session, string) (interface{}, error)
 }
 
-func (ec2StateSvc) PowerOn(instanceId string) (string, error) {
+func (ec2StateSvc) PowerOn(sess *session.Session, instanceId string) (interface{}, error) {
 
   if instanceId == "" {
     return "Invalid Instance ID", nil
   } else {
-    //Create a session
-    sess, err := session.NewSession()
-    if err != nil {
-      return "", err
-    }
-
     // Create a new EC2 Client
     svc := ec2.New(sess)
 
@@ -85,7 +83,7 @@ func (ec2StateSvc) PowerOn(instanceId string) (string, error) {
       if err != nil {
         return "", err
       } else {
-        return *result.StartingInstances[0].CurrentState.Name, nil
+        return /**result.StartingInstances[0].CurrentState.Name*/*result, nil
       }
     } else {
       // Other error (i.e. permissions, not found, etc)
@@ -111,14 +109,15 @@ type powerOnRequest struct {
 }
 
 type powerOnResponse struct {
-  Status string `json:"status"`
+  Status interface{} `json:"status"`
   Err    string `json:"err,omitempty"`
 }
 
-func makePowerOnEndpoint(svc Ec2StateSvc) endpoint.Endpoint {
+func makePowerOnEndpoint(sess *session.Session, svc Ec2StateSvc) endpoint.Endpoint {
   return func(ctx context.Context, request interface{}) (interface{}, error) {
     req := request.(powerOnRequest)
-    iid, err := svc.PowerOn(req.InstanceId)
+
+    iid, err := svc.PowerOn(sess, req.InstanceId)
     if err != nil {
       return powerOnResponse{iid, err.Error()}, nil
     }
