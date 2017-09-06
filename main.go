@@ -37,8 +37,14 @@ func main() {
     decodePowerOnRequest,
     encodeResponse,
   )
+  powerOffHandler := httptransport.NewServer(
+    makePowerOffEndpoint(sess, svc),
+    decodePowerOffRequest,
+    encodeResponse,
+  )
 
   http.Handle("/poweron", powerOnHandler)
+  http.Handle("/poweroff", powerOffHandler)
   logger.Log("msg", "HTTP", "addr", *listen)
   logger.Log("err", http.ListenAndServe(*listen, nil))
 }

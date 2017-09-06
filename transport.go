@@ -22,8 +22,28 @@ func makePowerOnEndpoint(sess *session.Session, svc Ec2StateSvc) endpoint.Endpoi
   }
 }
 
+func makePowerOffEndpoint(sess *session.Session, svc Ec2StateSvc) endpoint.Endpoint {
+  return func(ctx context.Context, request interface{}) (interface{}, error) {
+    req := request.(powerOffRequest)
+
+    res, err := svc.PowerOff(sess, req.InstanceId)
+    if err != nil {
+      return powerOffResponse{res, err.Error()}, nil
+    }
+    return powerOffResponse{res, ""}, nil
+  }
+}
+
 func decodePowerOnRequest(_ context.Context, r *http.Request) (interface {}, error) {
   var request powerOnRequest
+  if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+    return nil, err
+  }
+  return request, nil
+}
+
+func decodePowerOffRequest(_ context.Context, r *http.Request) (interface {}, error) {
+  var request powerOffRequest
   if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
     return nil, err
   }
@@ -39,6 +59,15 @@ type powerOnRequest struct {
 }
 
 type powerOnResponse struct {
+  Status interface{} `json:"status"`
+  Err    string `json:"err,omitempty"`
+}
+
+type powerOffRequest struct {
+  InstanceId []*string `json:"instance-id"`
+}
+
+type powerOffResponse struct {
   Status interface{} `json:"status"`
   Err    string `json:"err,omitempty"`
 }
