@@ -11,3 +11,7 @@ import:
   - endpoint
   - log
   - transport/http
+- package: github.com/oklog/oklog
+  version: ~0.2.2
+  subpackages:
+  - pkg/group
