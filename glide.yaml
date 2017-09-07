@@ -15,3 +15,8 @@ import:
   version: ~0.2.2
   subpackages:
   - pkg/group
+- package: github.com/timcurless/arbitrium
+  subpackages:
+  - pkg/ec2stateservice
+  - pkg/ec2stateendpoint
+  - pkg/ec2statetransport
