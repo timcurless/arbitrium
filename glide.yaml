@@ -1,0 +1,17 @@
+package: .
+import:
+- package: github.com/aws/aws-sdk-go
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/session
+  - service/ec2
+- package: github.com/go-kit/kit
+  subpackages:
+  - endpoint
+  - log
+  - transport/http
+- package: github.com/oklog/oklog
+  version: ~0.2.2
+  subpackages:
+  - pkg/group

@@ -1,7 +1,10 @@
-package main
+package ec2stateservice
 
 import (
+  "context"
   "errors"
+
+  "github.com/go-kit/kit/log"
 
   "github.com/aws/aws-sdk-go/aws"
   "github.com/aws/aws-sdk-go/aws/awserr"
@@ -10,13 +13,27 @@ import (
 )
 
 type Ec2StateSvc interface {
-  PowerOn(*session.Session, []*string) (interface{}, error)
-  PowerOff(*session.Session, []*string) (interface{}, error)
+  PowerOn(context.Context, *session.Session, []*string) (interface{}, error)
+  PowerOff(context.Context, *session.Session, []*string) (interface{}, error)
+}
+
+// Returns a new EC2StateSvc with all middelware wired up
+func New(logger log.Logger) Ec2StateSvc {
+  var svc Ec2StateSvc
+  {
+    svc = NewEc2StateService()
+    svc = LoggingMiddleware(logger)(svc)
+  }
+  return svc
+}
+
+func NewEc2StateService() Ec2StateSvc {
+  return ec2StateSvc{}
 }
 
 type ec2StateSvc struct {}
 
-func (ec2StateSvc) PowerOn(sess *session.Session, instanceId []*string) (interface{}, error) {
+func (s ec2StateSvc) PowerOn(_ context.Context, sess *session.Session, instanceId []*string) (interface{}, error) {
 
   if instanceId == nil {
     return "Invalid Instance ID", nil
@@ -48,7 +65,7 @@ func (ec2StateSvc) PowerOn(sess *session.Session, instanceId []*string) (interfa
   }
 }
 
-func (ec2StateSvc) PowerOff(sess *session.Session, instanceId []*string) (interface{}, error) {
+func (s ec2StateSvc) PowerOff(_ context.Context, sess *session.Session, instanceId []*string) (interface{}, error) {
 
   if instanceId == nil {
     return "Invalid Instance ID", nil
