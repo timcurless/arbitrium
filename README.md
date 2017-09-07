@@ -4,7 +4,7 @@ Cloud operations service. Currently supports power on and power off of one or mo
 #### Usage:
 1. Install Glide (curl https://glide.sh/get | sh) or (brew install glide)
 2. glide install (to install dependencies)
-1. go install
+1. go install ./cmd/arbitrium/
 2. arbitrium <port>
 3. curl -XPOST -d'{"instance-id":["i-abcd1234"]}' localhost:8080/poweron
 
