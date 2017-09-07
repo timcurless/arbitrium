@@ -13,8 +13,8 @@ import (
 )
 
 type Ec2StateSvc interface {
-  PowerOn(ctx context.Context, *session.Session, []*string) (interface{}, error)
-  PowerOff(ctx context.Context, *session.Session, []*string) (interface{}, error)
+  PowerOn(context.Context, *session.Session, []*string) (interface{}, error)
+  PowerOff(context.Context, *session.Session, []*string) (interface{}, error)
 }
 
 // Returns a new EC2StateSvc with all middelware wired up
@@ -27,7 +27,7 @@ func New(logger log.Logger) Ec2StateSvc {
   return svc
 }
 
-func NewEC2StateService() Ec2StateSvc {
+func NewEc2StateService() Ec2StateSvc {
   return ec2StateSvc{}
 }
 

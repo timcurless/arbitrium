@@ -43,7 +43,7 @@ func main() {
   // Create the EC2 State Service
   var (
     service = ec2stateservice.New(logger)
-    endpoints = ec2stateendpoint.New(service, logger)
+    endpoints = ec2stateendpoint.New(sess, service, logger)
     httpHandler = ec2statetransport.NewHTTPHandler(endpoints, logger)
   )
 

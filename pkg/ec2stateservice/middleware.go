@@ -3,7 +3,6 @@ package ec2stateservice
 import (
   "context"
   "encoding/json"
-  "time"
 
   "github.com/go-kit/kit/log"
 
@@ -26,32 +25,20 @@ type loggingMiddleware struct {
 
 
 func (mw loggingMiddleware) PowerOn(ctx context.Context, sess *session.Session, instanceId []*string) (output interface{}, err error) {
-  defer func(begin time.Time) {
+  defer func() {
     input, _ := json.Marshal(instanceId)
-    mw.logger.Log(
-      "method", "poweron",
-      "input", input,
-      "output", output,
-      "err", err,
-      "took", time.Since(begin),
-    )
-  }(time.Now())
+    mw.logger.Log("method", "poweron", "input", input, "output", output, "err", err)
+  }()
 
   output, err = mw.next.PowerOn(ctx, sess, instanceId)
   return
 }
 
 func (mw loggingMiddleware) PowerOff(ctx context.Context, sess *session.Session, instanceId []*string) (output interface{}, err error) {
-  defer func(begin time.Time) {
+  defer func() {
     input, _ := json.Marshal(instanceId)
-    mw.logger.Log(
-      "method", "poweroff",
-      "input", input,
-      "output", output,
-      "err", err,
-      "took", time.Since(begin),
-    )
-  }(time.Now())
+    mw.logger.Log("method", "poweroff", "input", input, "output", output, "err", err)
+  }()
 
   output, err = mw.next.PowerOff(ctx, sess, instanceId)
   return

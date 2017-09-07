@@ -14,18 +14,12 @@ import (
   "github.com/go-kit/kit/log"
   httptransport "github.com/go-kit/kit/transport/http"
 
-  "github.com/aws/aws-sdk-go/aws/session"
-
   "github.com/timcurless/arbitrium/pkg/ec2stateservice"
   "github.com/timcurless/arbitrium/pkg/ec2stateendpoint"
 )
 
 // Returns an HTTP Handler that exposes a set of endpoints on defined paths
 func NewHTTPHandler(endpoints ec2stateendpoint.Set, logger log.Logger) http.Handler {
-  options := []httptransport.ServerOption{
-    httptransport.ServerErrorEncoder(errorEncoder),
-    httptransport.ServerErrorLogger(logger),
-  }
   m := http.NewServeMux()
   m.Handle("/poweron", httptransport.NewServer(
     endpoints.PowerOnEndpoint,
@@ -51,7 +45,8 @@ func NewHTTPClient(instance string, logger log.Logger) (ec2stateservice.Ec2State
     return nil, err
   }
 
-  var powerOnEndpoint endpoint.Endpoint {
+  var powerOnEndpoint endpoint.Endpoint
+  {
     powerOnEndpoint = httptransport.NewClient(
       "POST",
       copyURL(u, "/poweron"),
@@ -60,7 +55,8 @@ func NewHTTPClient(instance string, logger log.Logger) (ec2stateservice.Ec2State
     ).Endpoint()
   }
 
-  var powerOffEndpoint endpoint.Endpoint {
+  var powerOffEndpoint endpoint.Endpoint
+  {
     powerOffEndpoint = httptransport.NewClient(
       "POST",
       copyURL(u, "/poweroff"),
@@ -69,7 +65,7 @@ func NewHTTPClient(instance string, logger log.Logger) (ec2stateservice.Ec2State
     ).Endpoint()
   }
 
-  return Set{
+  return ec2stateendpoint.Set{
     PowerOnEndpoint: powerOnEndpoint,
     PowerOffEndpoint: powerOffEndpoint,
   }, nil
@@ -104,13 +100,13 @@ type errorWrapper struct {
 }
 
 func decodeHTTPPowerOnRequest(_ context.Context, r *http.Request) (interface {}, error) {
-  var req PowerOnRequest
+  var req ec2stateendpoint.PowerOnRequest
   err := json.NewDecoder(r.Body).Decode(&req)
   return req, err
 }
 
 func decodeHTTPPowerOffRequest(_ context.Context, r *http.Request) (interface {}, error) {
-  var req PowerOffRequest
+  var req ec2stateendpoint.PowerOffRequest
   err := json.NewDecoder(r.Body).Decode(&req)
   return req, err
 }
@@ -119,7 +115,7 @@ func decodeHTTPPowerOnResponse(_ context.Context, r *http.Response) (interface {
   if r.StatusCode != http.StatusOK {
     return nil, errors.New(r.Status)
   }
-  var resp PowerOnResponse
+  var resp ec2stateendpoint.PowerOnResponse
   err := json.NewDecoder(r.Body).Decode(&resp)
   return resp, err
 }
@@ -128,7 +124,7 @@ func decodeHTTPPowerOffResponse(_ context.Context, r *http.Response) (interface 
   if r.StatusCode != http.StatusOK {
     return nil, errors.New(r.Status)
   }
-  var resp PowerOffResponse
+  var resp ec2stateendpoint.PowerOffResponse
   err := json.NewDecoder(r.Body).Decode(&resp)
   return resp, err
 }
