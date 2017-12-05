@@ -43,3 +43,13 @@ func (mw loggingMiddleware) PowerOff(ctx context.Context, sess *session.Session,
   output, err = mw.next.PowerOff(ctx, sess, instanceId)
   return
 }
+
+func (mw loggingMiddleware) Describe(ctx context.Context, sess *session.Session, instanceId []*string) (output interface{}, err error) {
+  defer func() {
+    input, _ := json.Marshal(instanceId)
+    mw.logger.Log("method", "describe", "input", input, "output", output, "err", err)
+  }()
+  
+  output, err = mw.next.Describe(ctx, sess, instanceId)
+  return
+}

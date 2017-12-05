@@ -31,6 +31,11 @@ func NewHTTPHandler(endpoints ec2stateendpoint.Set, logger log.Logger) http.Hand
     decodeHTTPPowerOffRequest,
     encodeHTTPGenericResponse,
   ))
+  m.Handle("/instances", httptransport.NewServer(
+    endpoints.DescribeEndpoint,
+    decodeHTTPDescribeRequest,
+    encodeHTTPGenericResponse,
+  ))
   return m
 }
 
@@ -64,10 +69,21 @@ func NewHTTPClient(instance string, logger log.Logger) (ec2stateservice.Ec2State
       decodeHTTPPowerOffResponse,
     ).Endpoint()
   }
+  
+  var describeEndpoint endpoint.Endpoint
+  {
+    describeEndpoint = httptransport.NewClient(
+      "POST",
+      copyURL(u, "/instances"),
+      encodeHTTPGenericRequest,
+      decodeHTTPDescribeResponse,
+    ).Endpoint()
+  }
 
   return ec2stateendpoint.Set{
     PowerOnEndpoint: powerOnEndpoint,
     PowerOffEndpoint: powerOffEndpoint,
+    DescribeEndpoint: describeEndpoint,
   }, nil
 }
 
@@ -111,6 +127,12 @@ func decodeHTTPPowerOffRequest(_ context.Context, r *http.Request) (interface {}
   return req, err
 }
 
+func decodeHTTPDescribeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+  var req ec2stateendpoint.DescribeRequest
+  err := json.NewDecoder(r.Body).Decode(&req)
+  return req, err
+}
+
 func decodeHTTPPowerOnResponse(_ context.Context, r *http.Response) (interface {}, error) {
   if r.StatusCode != http.StatusOK {
     return nil, errors.New(r.Status)
@@ -125,6 +147,15 @@ func decodeHTTPPowerOffResponse(_ context.Context, r *http.Response) (interface 
     return nil, errors.New(r.Status)
   }
   var resp ec2stateendpoint.PowerOffResponse
+  err := json.NewDecoder(r.Body).Decode(&resp)
+  return resp, err
+}
+
+func decodeHTTPDescribeResponse(_ context.Context, r *http.Response) (interface {}, error) {
+  if r.StatusCode != http.StatusOK {
+    return nil, errors.New(r.Status)
+  }
+  var resp ec2stateendpoint.DescribeResponse
   err := json.NewDecoder(r.Body).Decode(&resp)
   return resp, err
 }

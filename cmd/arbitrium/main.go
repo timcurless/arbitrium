@@ -12,6 +12,7 @@ import (
   "github.com/go-kit/kit/log"
   "github.com/oklog/oklog/pkg/group"
 
+  "github.com/aws/aws-sdk-go/aws"
   "github.com/aws/aws-sdk-go/aws/session"
 
   "github.com/timcurless/arbitrium/pkg/ec2stateservice"
@@ -38,7 +39,14 @@ func main() {
   }
 
   // Create AWS SDK session
-  sess := session.Must(session.NewSession())
+  sess, err := session.NewSessionWithOptions(session.Options{
+    Config: aws.Config{Region: aws.String("us-east-1")},
+    Profile: "default",
+  })
+  if err != nil {
+    logger.Log("awsclient_err", err)
+    os.Exit(1)
+  }
 
   // Create the EC2 State Service
   var (

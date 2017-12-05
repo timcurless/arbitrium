@@ -16,6 +16,7 @@ import (
 type Set struct {
   PowerOnEndpoint endpoint.Endpoint
   PowerOffEndpoint endpoint.Endpoint
+  DescribeEndpoint endpoint.Endpoint
 }
 
 // Returns a new Set of endpoints
@@ -30,9 +31,15 @@ func New(sess *session.Session, svc ec2stateservice.Ec2StateSvc, logger log.Logg
     powerOffEndpoint = MakePowerOffEndpoint(sess, svc)
     powerOffEndpoint = LoggingMiddleware(log.With(logger, "method", "poweroff"))(powerOffEndpoint)
   }
+  var describeEndpoint endpoint.Endpoint
+  {
+    describeEndpoint = MakeDescribeEndpoint(sess, svc)
+    describeEndpoint = LoggingMiddleware(log.With(logger, "method", "describe"))(describeEndpoint)
+  }
   return Set{
     PowerOnEndpoint: powerOnEndpoint,
     PowerOffEndpoint: powerOffEndpoint,
+    DescribeEndpoint: describeEndpoint,
   }
 }
 
@@ -55,6 +62,15 @@ func (s Set) PowerOff(ctx context.Context, sess *session.Session, instanceId []*
   return response.Status, response.Err
 }
 
+func  (s Set) Describe(ctx context.Context, sess *session.Session, instanceId []*string) (interface{}, error) {
+  resp, err := s.DescribeEndpoint(ctx, DescribeRequest{InstanceId: instanceId})
+  if err != nil {
+    return nil, err
+  }
+  response := resp.(DescribeResponse)
+  return response.Response, response.Err
+}
+
 // Factory functions: Endpoints wrap service interfaces
 func MakePowerOnEndpoint(sess *session.Session, svc ec2stateservice.Ec2StateSvc) endpoint.Endpoint {
   return func(ctx context.Context, request interface{}) (response interface{}, err error) {
@@ -69,6 +85,14 @@ func MakePowerOffEndpoint(sess *session.Session, svc ec2stateservice.Ec2StateSvc
     req := request.(PowerOffRequest)
     res, err := svc.PowerOff(ctx, sess, req.InstanceId)
     return PowerOffResponse{Status: res, Err: err}, nil
+  }
+}
+
+func MakeDescribeEndpoint(sess *session.Session, svc ec2stateservice.Ec2StateSvc) endpoint.Endpoint {
+  return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+    req := request.(DescribeRequest)
+    res, err := svc.Describe(ctx, sess, req.InstanceId)
+    return DescribeResponse{Response: res, Err: err}, nil
   }
 }
 
@@ -90,3 +114,13 @@ type PowerOffResponse struct {
   Status interface{} `json:"status"`
   Err    error `json:"err,omitempty"`
 }
+
+type DescribeRequest struct {
+  InstanceId []*string `json:"instance-id"`
+}
+
+type DescribeResponse struct {
+  Response interface{} `json:"response"`
+  Err      error `json:"err,omitempty"`
+}
+

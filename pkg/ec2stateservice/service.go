@@ -15,6 +15,7 @@ import (
 type Ec2StateSvc interface {
   PowerOn(context.Context, *session.Session, []*string) (interface{}, error)
   PowerOff(context.Context, *session.Session, []*string) (interface{}, error)
+  Describe(context.Context, *session.Session, []*string) (interface{}, error)
 }
 
 // Returns a new EC2StateSvc with all middelware wired up
@@ -92,6 +93,34 @@ func (s ec2StateSvc) PowerOff(_ context.Context, sess *session.Session, instance
       }
     } else {
       // Other error (i.e. permissions, not found, etc)
+      return "", awsErr
+    }
+  }
+}
+
+func (s ec2StateSvc) Describe(_ context.Context, sess *session.Session, instanceId []*string) (interface{}, error) {
+  
+  if instanceId == nil {
+    return "Invalid Instance ID", nil
+  } else {
+    svc := ec2.New(sess)
+    
+    input := &ec2.DescribeInstancesInput {
+      InstanceIds: instanceId,
+      DryRun: aws.Bool(true),
+    }
+    result, err := svc.DescribeInstances(input)
+    awsErr, ok := err.(awserr.Error)
+    
+    if ok && awsErr.Code() == "DryRunOperation" {
+      input.DryRun = aws.Bool(false)
+      result, err = svc.DescribeInstances(input)
+      if err != nil {
+        return "", err
+      } else {
+        return *result, nil
+      }
+    } else {
       return "", awsErr
     }
   }
